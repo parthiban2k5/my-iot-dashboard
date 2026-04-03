@@ -4,16 +4,18 @@
     <title>IoT Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 </head>
-<body>
+<body style="text-align:center; font-family:Arial; padding-top:50px;">
     <h1>Room Stats</h1>
-    <div>Temperature: <span id="temp">--</span> °C</div>
-    <div>Humidity: <span id="hum">--</span> %</div>
+    <div style="font-size:2em;">Temperature: <span id="temp" style="color:red;">--</span> °C</div>
+    <div style="font-size:2em;">Humidity: <span id="hum" style="color:blue;">--</span> %</div>
+    <p id="status" style="color:gray;">Connecting...</p>
 
     <script>
-        // Use WebSocket port (usually 8083 for EMQX or 443 for encrypted)
-        const client = new Paho.MQTT.Client("broker.emqx.io", 8083, "clientId_" + Math.random());
+        // FIX 1: Change port to 8084 and add "wss://" for Secure WebSockets
+        const client = new Paho.MQTT.Client("wss://broker.emqx.io:8084/mqtt", "clientId_" + Math.random());
 
         client.onMessageArrived = (message) => {
+            console.log("Data received from ESP8266: " + message.payloadString);
             if (message.destinationName === "yourname/sensor/temp") {
                 document.getElementById("temp").innerText = message.payloadString;
             } else if (message.destinationName === "yourname/sensor/hum") {
@@ -21,10 +23,18 @@
             }
         };
 
-        client.connect({ onSuccess: () => {
-            client.subscribe("yourname/sensor/temp");
-            client.subscribe("yourname/sensor/hum");
-        }});
+        // FIX 2: Added useSSL: true to match GitHub's security requirements
+        client.connect({ 
+            useSSL: true, 
+            onSuccess: () => {
+                document.getElementById("status").innerText = "Connected! Waiting for data...";
+                client.subscribe("yourname/sensor/temp");
+                client.subscribe("yourname/sensor/hum");
+            },
+            onFailure: (error) => {
+                document.getElementById("status").innerText = "Connection Failed: " + error.errorMessage;
+            }
+        });
     </script>
 </body>
 </html>
