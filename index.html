@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IoT Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+</head>
+<body>
+    <h1>Room Stats</h1>
+    <div>Temperature: <span id="temp">--</span> °C</div>
+    <div>Humidity: <span id="hum">--</span> %</div>
+
+    <script>
+        // Use WebSocket port (usually 8083 for EMQX or 443 for encrypted)
+        const client = new Paho.MQTT.Client("broker.emqx.io", 8083, "clientId_" + Math.random());
+
+        client.onMessageArrived = (message) => {
+            if (message.destinationName === "yourname/sensor/temp") {
+                document.getElementById("temp").innerText = message.payloadString;
+            } else if (message.destinationName === "yourname/sensor/hum") {
+                document.getElementById("hum").innerText = message.payloadString;
+            }
+        };
+
+        client.connect({ onSuccess: () => {
+            client.subscribe("yourname/sensor/temp");
+            client.subscribe("yourname/sensor/hum");
+        }});
+    </script>
+</body>
+</html>
